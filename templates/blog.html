@@ -1,0 +1,58 @@
+<DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+        <style type="text/css">
+            .error {
+                color: red;
+            }
+
+        </style>
+        <title>
+            Blog by Dinker Gulati
+        </title>
+    </head>
+
+    <body>
+        <center><h1>Dinker's blog</h1></center>
+        <center><h3><a href="/blog/newpost">Add a Post</a></h3></center>
+        {% for i in blogs %}
+        <h2><a href="/blog/{{i.key().id()}}">{{i.subject}}</h2>
+        <h4>
+            <a class="btn btn-default" href="/edit/{{i.key().id()}}" role="button">Edit</a>
+            <a class="btn btn-default" href="delete/{{i.key().id()}}" role="button">Delete</a>
+            <a class="btn btn-default" href="/like/{{i.key().id()}}" role="button">Like</a>
+            Likes:{{i.likes}}
+        </h4>
+        <hr>
+        <p>{{i.content}}</p>
+        <p>-by {{i.creator}}</p>
+        <br>
+
+            {% for j in comments %}
+                {% if j.post_id == i.key().id() %}
+                <h6>{{j.comment}} &nbsp &nbsp &nbsp -by {{j.commenter_name}} <a class="btn btn-default btn-xs" href="/comment_del/{{j.key().id()}}" role="button">Delete</a> <a class="btn btn-default btn-xs" href="/comment_edit/{{j.key().id()}}" role="button">Edit</a></h6>
+                {% endif %}
+            {% endfor %}
+
+        <form method="post" action="/comment_add/{{i.key().id()}}">
+            <label>
+                <div>Comment</div>
+                <textarea name="comment"></textarea>
+            </label>
+            <br>
+            <input type="submit" value="Submit">
+        </form>
+
+        <br>
+        <hr>
+        <br>
+        {% endfor %}
+    </body>
+</html>

@@ -1,0 +1,31 @@
+<DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="stylesheet" type="text/css" href="/css/main.css" />
+        <title>
+            New Blog
+        </title>
+    </head>
+
+    <body>
+        <h1><center><a href="/blog">Dinker's blog</a></center></h1>
+        <br>
+        <h2>New post</h2>
+
+        <form method="post">
+            <label>
+                <div>Subject</div>
+                <input type="text" name="subject" value="{{title}}">
+            </label>
+            <label>
+                <div>Blog</div>
+                <textarea name="content">{{content}}</textarea>
+            </label>
+            <br>
+            <button>Submit</button>
+            <a href="/blog">Cancel</a>
+            <div class="error">{{error}}</div>
+        </form>
+    </body>
+</html>

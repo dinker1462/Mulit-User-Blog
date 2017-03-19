@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Login</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+  </head>
+
+  <body>
+    <h2>Login</h2>
+    <form method="post">
+      <table>
+        <tr>
+          <td class="label">
+            Username
+          </td>
+          <td>
+            <input type="text" name="username" value="{{username}}">
+          </td>
+          <td class="error">
+            {{username_error}}
+          </td>
+        </tr>
+
+        <tr>
+          <td class="label">
+            Password
+          </td>
+          <td>
+            <input type="password" name="password" value="">
+          </td>
+          <td class="error">
+            {{password_error}}
+          </td>
+        </tr>
+
+      </table>
+
+      <input type="submit" name="Login">
+    </form>
+    <br>
+    <h4>Not a Register User? <a href="/signup">Click here.</a>
+  </body>
+
+</html>
