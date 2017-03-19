@@ -127,6 +127,12 @@ class Comment(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
 
 
+# The Like database
+class Like_data(db.Model):
+    post_id = db.IntegerProperty(required=True)
+    liker = db.StringProperty(required=True)
+
+
 class SignUp(Handler):
 
     def get(self):
@@ -261,6 +267,10 @@ class NewPost(Handler):
             self.redirect("/login")
 
     def post(self):
+        cookie = self.request.cookies.get("name")
+        if not check_cookie(cookie):
+            self.error(404)
+            return
 
         subject = self.request.get("subject")
         content = self.request.get("content")
@@ -309,6 +319,14 @@ class Like(Handler):
                 self.error(404)
                 return
             if not i.creator == check_cookie(cookie):
+                all_likes = db.GqlQuery("select * from Like_data")
+                for k in all_likes:
+                    if k.post_id == this_id and check_cookie(cookie) == k.liker:
+                        self.write("!!Cannot Like a Post twice!!")
+                        return
+                name = check_cookie(cookie)
+                u = Like_data(post_id=this_id, liker=name)
+                u.put()
                 i.likes += 1
                 i.put()
                 self.redirect("/blog")
@@ -345,7 +363,7 @@ class Edit(Handler):
         if check_cookie(cookie):
             this_id = int(this_id)
             i = Blog.get_by_id(this_id)
-            if not post:
+            if not i:
                 self.error(404)
                 return
             if i.creator == check_cookie(cookie):
@@ -358,18 +376,29 @@ class Edit(Handler):
             self.redirect("/login")
 
     def post(self, this_id):
+        cookie = self.request.cookies.get("name")
+        if not check_cookie(cookie):
+            self.redirect("/login")
+            return
+
         subject = self.request.get("subject")
         content = self.request.get("content")
 
         if subject and content:
             this_id = int(this_id)
             i = Blog.get_by_id(this_id)
-            i.subject = subject
-            i.content = content
-            i.put()
-            id_this = i.key().id()
-            id_this = str(id_this)
-            self.redirect("/blog/"+id_this)
+            if not i:
+                self.error(404)
+                return
+            if i.creator == check_cookie(cookie):
+                i.subject = subject
+                i.content = content
+                i.put()
+                id_this = i.key().id()
+                id_this = str(id_this)
+                self.redirect("/blog/"+id_this)
+            else:
+                self.write("!!Cannot Edit Other's Posts!!")
         else:
             error = "Enter both the inputs"
             self.render("newpost.html", subject=subject, content=content,
@@ -418,15 +447,24 @@ class Comment_edit(Handler):
             self.redirect("/login")
 
     def post(self, this_id):
+        cookie = self.request.cookies.get("name")
+        name = check_cookie(cookie)
+        if not name:
+            self.error(404)
+            return
+
         comment = self.request.get("comment")
         this_id = int(this_id)
         j = Comment.get_by_id(this_id)
-        if not post:
+        if not j:
             self.error(404)
             return
-        j.comment = comment
-        j.put()
-        self.redirect("/blog")
+        if j.commenter_name == name:
+            j.comment = comment
+            j.put()
+            self.redirect("/blog")
+        else:
+            self.write("!!Can not edit other's comments!!")
 
 
 # Comment Delete Button Handler
