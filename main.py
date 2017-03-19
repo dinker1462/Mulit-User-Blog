@@ -22,51 +22,66 @@ import string
 
 from google.appengine.ext import db
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
-                                autoescape = True)
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
+                               autoescape=True)
 
 
-#General Purpose Functions
+# General Purpose Functions
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+
+
 def valid_username(username):
     return username and USER_RE.match(username)
 
 PASS_RE = re.compile(r"^.{3,20}$")
+
+
 def valid_password(password):
     return password and PASS_RE.match(password)
 
-EMAIL_RE  = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
+EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
+
+
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
 SECRET = "thisissparta"
+
+
 def hash_str(s):
     return hmac.new(SECRET, s).hexdigest()
 
+
 def make_secure(s):
     return s + "|" + hash_str(s)
+
 
 def check_secure_val(h):
     val = h.split("|")[0]
     if h == make_secure(val):
         return val
 
-def make_salt(length = 5):
+
+def make_salt(length=5):
     return ''.join(random.choice(string.letters) for x in xrange(length))
 
-def make_pw_hash(username, pw, salt = None):
+
+def make_pw_hash(username, pw, salt=None):
     if not salt:
         salt = make_salt()
     h = hashlib.sha256(username + pw + salt).hexdigest()
     return '%s,%s' % (salt, h)
 
+
 def valid_pw(username, password, h):
     salt = h.split(',')[0]
     return h == make_pw_hash(username, password, salt)
 
+
 def set_cookie(username):
     cookie = make_secure(username)
     return cookie
+
 
 def check_cookie(cookie):
     if cookie:
@@ -76,6 +91,7 @@ def check_cookie(cookie):
 
 
 class Handler(webapp2.RequestHandler):
+
     def write(self, *a, **kw):
         self.response.out.write(*a, **kw)
 
@@ -87,31 +103,32 @@ class Handler(webapp2.RequestHandler):
         self.write(self.render_str(template, **kw))
 
 
-#The User DataBase
+# The User DataBase
 class User(db.Model):
-    username = db.StringProperty(required = True)
-    pw_hash = db.StringProperty(required = True)
+    username = db.StringProperty(required=True)
+    pw_hash = db.StringProperty(required=True)
     email = db.StringProperty()
 
 
-#The Blog database
+# The Blog database
 class Blog(db.Model):
-    subject = db.StringProperty(required = True)
-    content = db.TextProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True)
-    likes = db.IntegerProperty(required = False)
-    creator = db.StringProperty(required = True)
+    subject = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    likes = db.IntegerProperty(required=False)
+    creator = db.StringProperty(required=True)
 
 
-#The Comments database
+# The Comments database
 class Comment(db.Model):
-    comment = db.StringProperty(required = True)
-    commenter_name = db.StringProperty(required = True)
-    post_id = db.IntegerProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True)
+    comment = db.StringProperty(required=True)
+    commenter_name = db.StringProperty(required=True)
+    post_id = db.IntegerProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
 
 
 class SignUp(Handler):
+
     def get(self):
         self.render("signup.html")
 
@@ -152,12 +169,12 @@ class SignUp(Handler):
             u = User.all().filter('username =', username).get()
             if u:
                 msg = 'That user already exists.'
-                self.render('signup.html', username_error = msg)
+                self.render('signup.html', username_error=msg)
 
             else:
                 pw_hash = make_pw_hash(username, password)
-                u = User(username = username, pw_hash = pw_hash,
-                 email = email)
+                u = User(username=username, pw_hash=pw_hash,
+                         email=email)
                 u.put()
                 self.response.headers.add_header("Set-Cookie", "name=%s;Path=/"
                                                  % str(set_cookie(username)))
@@ -165,6 +182,7 @@ class SignUp(Handler):
 
 
 class Login(Handler):
+
     def get(self):
         self.render("login.html")
 
@@ -196,7 +214,7 @@ class Login(Handler):
                     cookie = set_cookie(username)
                     self.response.headers.add_header("Set-Cookie",
                                                      "name=%s; Path=/"
-                                                     %str(cookie))
+                                                     % str(cookie))
                     self.redirect('/welcome')
                 else:
                     error = "User not found."
@@ -207,30 +225,34 @@ class Login(Handler):
 
 
 class Logout(Handler):
+
     def get(self):
         self.response.headers.add_header("Set-Cookie", "name=; Path=/")
         self.redirect('/signup')
 
 
 class Welcome(Handler):
+
     def get(self):
         cookie = self.request.cookies.get("name")
         username = check_cookie(cookie)
         if username:
-            self.render('welcome.html', username = username)
+            self.render('welcome.html', username=username)
         else:
             self.redirect('/signup')
 
 
-#Main blog page Handler
+# Main blog page Handler
 class BlogPage(Handler):
+
     def get(self):
         blogs = db.GqlQuery("select * from Blog order by created desc")
         comments = db.GqlQuery("select * from Comment order by created asc")
-        self.render("blog.html", blogs = blogs, comments = comments)
+        self.render("blog.html", blogs=blogs, comments=comments)
 
 
 class NewPost(Handler):
+
     def get(self):
         cookie = self.request.cookies.get("name")
         if check_cookie(cookie):
@@ -246,8 +268,8 @@ class NewPost(Handler):
         if subject and content:
             cookie = self.request.cookies.get("name")
             creator = check_cookie(cookie)
-            a = Blog(subject = subject, content = content, likes = 0,
-                     creator = creator)
+            a = Blog(subject=subject, content=content, likes=0,
+                     creator=creator)
             a.put()
             id_this = a.key().id()
             id_this = str(id_this)
@@ -258,26 +280,34 @@ class NewPost(Handler):
                         error=error)
 
 
-#Permalink Page Handler
+# Permalink Page Handler
 class OnePost(Handler):
+
     def get(self, this_id):
         blogs = db.GqlQuery("select * from Blog")
         subject = ""
         content = ""
         this_id = int(this_id)
         i = Blog.get_by_id(this_id)
-        subject = i.subject
-        content = i.content
-        self.render("OnePost.html", subject = subject, content = content)
+        if not i:
+            self.error(404)
+        else:
+            subject = i.subject
+            content = i.content
+            self.render("OnePost.html", subject=subject, content=content)
 
 
-#Like Button Handler
+# Like Button Handler
 class Like(Handler):
+
     def get(self, this_id):
         cookie = self.request.cookies.get("name")
         if check_cookie(cookie):
             this_id = int(this_id)
             i = Blog.get_by_id(this_id)
+            if not i:
+                self.error(404)
+                return
             if not i.creator == check_cookie(cookie):
                 i.likes += 1
                 i.put()
@@ -289,8 +319,9 @@ class Like(Handler):
             self.redirect("/login")
 
 
-#Delete Button Handler
+# Delete Button Handler
 class Delete(Handler):
+
     def get(self, this_id):
         cookie = self.request.cookies.get("name")
         if check_cookie(cookie):
@@ -306,17 +337,21 @@ class Delete(Handler):
             self.redirect("/login")
 
 
-#Edit Button Handler
+# Edit Button Handler
 class Edit(Handler):
+
     def get(self, this_id):
         cookie = self.request.cookies.get("name")
         if check_cookie(cookie):
             this_id = int(this_id)
             i = Blog.get_by_id(this_id)
+            if not post:
+                self.error(404)
+                return
             if i.creator == check_cookie(cookie):
                 title = i.subject
                 content = i.content
-                self.render("newpost.html", title = title, content = content)
+                self.render("newpost.html", title=title, content=content)
             else:
                 self.write("!!Cannot Edit Other's Posts!!")
         else:
@@ -340,17 +375,24 @@ class Edit(Handler):
             self.render("newpost.html", subject=subject, content=content,
                         error=error)
 
-#Comment Add Button Handler
+# Comment Add Button Handler
+
+
 class Comment_add(Handler):
+
     def post(self, this_id):
         comment = self.request.get("comment")
         if comment:
             this_id = int(this_id)
             i = Blog.get_by_id(this_id)
+            if not post:
+                self.error(404)
+                return
             cookie = self.request.cookies.get("name")
             name = check_cookie(cookie)
             if name:
-                a = Comment(comment = comment, commenter_name = name, post_id = this_id)
+                a = Comment(
+                    comment=comment, commenter_name=name, post_id=this_id)
                 a.put()
                 self.redirect("/blog")
             else:
@@ -359,8 +401,9 @@ class Comment_add(Handler):
             self.write("!!Can not post blank Comments!!")
 
 
-#Comment Edit Button Handler
+# Comment Edit Button Handler
 class Comment_edit(Handler):
+
     def get(self, this_id):
         cookie = self.request.cookies.get("name")
         name = check_cookie(cookie)
@@ -368,7 +411,7 @@ class Comment_edit(Handler):
             this_id = int(this_id)
             j = Comment.get_by_id(this_id)
             if j.commenter_name == name:
-                self.render("comment_edit.html", comment_text = j.comment, j = j)
+                self.render("comment_edit.html", comment_text=j.comment, j=j)
             else:
                 self.write("!!Can not edit other's comments!!")
         else:
@@ -378,19 +421,26 @@ class Comment_edit(Handler):
         comment = self.request.get("comment")
         this_id = int(this_id)
         j = Comment.get_by_id(this_id)
+        if not post:
+            self.error(404)
+            return
         j.comment = comment
         j.put()
         self.redirect("/blog")
 
 
-#Comment Delete Button Handler
+# Comment Delete Button Handler
 class Comment_del(Handler):
+
     def get(self, this_id):
         cookie = self.request.cookies.get("name")
         name = check_cookie(cookie)
         if name:
             this_id = int(this_id)
             j = Comment.get_by_id(this_id)
+            if not post:
+                self.error(404)
+                return
             if j.commenter_name == name:
                 j.delete()
                 self.redirect("/blog")
